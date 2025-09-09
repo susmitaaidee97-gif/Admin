@@ -3,175 +3,201 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BETX Admin Panel</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <title>Admin Panel - BETX</title>
   <style>
     body {
       margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background-color: #0d1b2a;
-      color: white;
-      text-align: center;
+      font-family: Arial, sans-serif;
+      background-color: #0a1a2f;
+      color: #fff;
     }
-    .login-box, .dashboard {
-      max-width: 400px;
-      margin: 80px auto;
+    .login-container, .dashboard {
+      display: none;
+      height: 100vh;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    .login-container.active, .dashboard.active {
+      display: flex;
+    }
+    .card {
+      background: #112b4a;
       padding: 20px;
       border-radius: 10px;
-      background-color: #1b263b;
-      box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    }
-    h2 {
-      margin-bottom: 20px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      text-align: center;
     }
     input {
       width: 90%;
       padding: 10px;
-      margin: 10px 0;
+      margin: 8px 0;
+      border-radius: 6px;
       border: none;
-      border-radius: 5px;
+      outline: none;
     }
     button {
       width: 95%;
       padding: 12px;
-      margin-top: 15px;
+      margin: 10px 0;
       border: none;
-      border-radius: 5px;
-      color: white;
+      border-radius: 6px;
+      color: #fff;
       font-size: 16px;
       cursor: pointer;
     }
-    .green-btn { background-color: #2ecc71; }
-    .orange-btn { background-color: #e67e22; }
-    .blue-box {
-      background-color: #0077b6;
+    .btn-green { background: #28a745; }
+    .btn-orange { background: #ff8800; }
+    .btn-grey { background: #333; }
+    .balance-card {
+      background: #007bff;
       padding: 20px;
-      border-radius: 10px;
+      border-radius: 12px;
       margin: 20px 0;
+      color: #fff;
+      font-size: 22px;
+      position: relative;
     }
-    .logout-btn {
-      background-color: #e63946;
-      margin-top: 30px;
+    .balance-card small {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    .header {
+      width: 100%;
+      text-align: center;
+      padding: 15px;
+      background: #0f2442;
+      font-size: 20px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <!-- LOGIN PAGE -->
-  <div id="login" class="login-box">
-    <h2>Admin Login</h2>
-    <input type="text" id="username" placeholder="Username"><br>
-    <input type="password" id="password" placeholder="Password"><br>
-    <button onclick="login()">Login</button>
-    <p id="loginError" style="color: red;"></p>
-  </div>
-
-  <!-- DASHBOARD -->
-  <div id="dashboard" class="dashboard" style="display:none;">
-    <h2>My Account</h2>
-    <p>EPOS Nº <b>-Don ❤️</b></p>
-    <p>Location: NEPAL 🇳🇵</p>
-
-    <div class="blue-box">
-      <h1 id="balance">0</h1>
-      <p>NPR (Re)</p>
+  <!-- Login Page -->
+  <div class="login-container active" id="loginPage">
+    <div class="card">
+      <h2>Admin Login</h2>
+      <input type="text" id="username" placeholder="Username">
+      <input type="password" id="password" placeholder="Password">
+      <button class="btn-green" onclick="login()">Login</button>
+      <p id="loginError" style="color:red; display:none;">Invalid credentials</p>
     </div>
-
-    <h3>Deposit to Player</h3>
-    <input type="text" id="playerId" placeholder="Enter Player Account No."><br>
-    <input type="number" id="amount" placeholder="Enter Amount"><br>
-    <button class="green-btn" onclick="deposit()">Deposit</button>
-
-    <button class="orange-btn" disabled>Withdraw (Coming Soon)</button>
-
-    <button class="logout-btn" onclick="logout()">LOG OUT</button>
   </div>
 
-  <!-- Firebase SDK -->
-  <script type="module">
-    // Import Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  <!-- Dashboard -->
+  <div class="dashboard" id="dashboardPage">
+    <div class="header">My Account</div>
+    <div class="card">
+      <p>EPOS Nº <span id="epos">-Don ❤️</span></p>
+      <p>Location: NEPAL 🇳🇵</p>
+      <div class="balance-card">
+        <div>Balance: <span id="adminBalance">0</span> NPR</div>
+        <small>(Admin Wallet)</small>
+      </div>
 
-    // Your Firebase config
+      <h3>Top up Player</h3>
+      <input type="text" id="playerAccount" placeholder="Player Account Nº">
+      <input type="number" id="depositAmount" placeholder="Deposit Amount">
+      <button class="btn-green" onclick="deposit()">Top up account</button>
+      
+      <button class="btn-orange" disabled>Withdraw funds (Coming soon)</button>
+      <button class="btn-grey" onclick="logout()">LOG OUT</button>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+
+  <script>
+    // Firebase config (saved in my memory for you)
     const firebaseConfig = {
-      apiKey: "AIzaSyCv3gDLEUhuHdMDPc2RX2AzLvihDfm-Exgo",
+      apiKey: "AIzaSyCv3gDLEUhuHdMDPc2RX2AzLvihDfmEXgo",
       authDomain: "betx-74dff.firebaseapp.com",
       projectId: "betx-74dff",
-      storageBucket: "betx-74dff.appspot.com",
+      storageBucket: "betx-74dff.firebasestorage.app",
       messagingSenderId: "85279852822",
-      appId: "1:85279852822:web:91ef8-dad8794d820416837",
+      appId: "1:85279852822:web:91ef8dad8794d820416837",
       measurementId: "G-NX5D0BF329"
     };
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    let adminDocRef = db.collection("admins").doc("Don");
 
-    // LOGIN
-    function login() {
+    // Login
+    function login(){
       const user = document.getElementById("username").value;
       const pass = document.getElementById("password").value;
-      if(user === "Don" && pass === "000") {
-        document.getElementById("login").style.display = "none";
-        document.getElementById("dashboard").style.display = "block";
-        loadBalance();
+      if(user === "Don" && pass === "000"){
+        document.getElementById("loginPage").classList.remove("active");
+        document.getElementById("dashboardPage").classList.add("active");
+        listenAdminBalance();
       } else {
-        document.getElementById("loginError").innerText = "Invalid Username or Password!";
+        document.getElementById("loginError").style.display = "block";
       }
     }
 
-    // LOAD ADMIN BALANCE
-    async function loadBalance() {
-      const ref = doc(db, "admin", "Don");
-      const snap = await getDoc(ref);
-      if(snap.exists()) {
-        document.getElementById("balance").innerText = snap.data().balance;
-      } else {
-        await setDoc(ref, { balance: 0 });
-        document.getElementById("balance").innerText = 0;
-      }
+    function logout(){
+      document.getElementById("dashboardPage").classList.remove("active");
+      document.getElementById("loginPage").classList.add("active");
     }
 
-    // DEPOSIT FUNCTION
-    async function deposit() {
-      const playerId = document.getElementById("playerId").value;
-      const amount = parseInt(document.getElementById("amount").value);
-      if(!playerId || !amount) { alert("Enter all details!"); return; }
-
-      const adminRef = doc(db, "admin", "Don");
-      const playerRef = doc(db, "players", playerId);
-
-      // Deduct from Admin, Add to Player
-      const adminSnap = await getDoc(adminRef);
-      if(adminSnap.exists()) {
-        let adminBal = adminSnap.data().balance;
-        if(adminBal < amount) {
-          alert("Not enough balance!");
-          return;
+    // Realtime admin balance
+    function listenAdminBalance(){
+      adminDocRef.onSnapshot(doc=>{
+        if(doc.exists){
+          document.getElementById("adminBalance").innerText = doc.data().balance;
         }
-        await updateDoc(adminRef, { balance: adminBal - amount });
-        document.getElementById("balance").innerText = adminBal - amount;
+      });
+    }
+
+    // Deposit to player
+    async function deposit(){
+      const playerAcc = document.getElementById("playerAccount").value.trim();
+      const amount = parseFloat(document.getElementById("depositAmount").value);
+
+      if(!playerAcc || !amount || amount <= 0){
+        alert("Enter valid account number and amount.");
+        return;
       }
 
-      const playerSnap = await getDoc(playerRef);
-      if(playerSnap.exists()) {
-        let playerBal = playerSnap.data().balance;
-        await updateDoc(playerRef, { balance: playerBal + amount });
+      const adminDoc = await adminDocRef.get();
+      if(!adminDoc.exists){
+        alert("Admin account not found!");
+        return;
+      }
+
+      let adminBalance = adminDoc.data().balance;
+      if(amount > adminBalance){
+        alert("Insufficient admin balance.");
+        return;
+      }
+
+      // Deduct from admin
+      await adminDocRef.update({
+        balance: adminBalance - amount
+      });
+
+      // Add to player
+      const playerRef = db.collection("users").doc(playerAcc);
+      const playerDoc = await playerRef.get();
+      if(playerDoc.exists){
+        let currentBalance = playerDoc.data().balance || 0;
+        await playerRef.update({
+          balance: currentBalance + amount
+        });
       } else {
-        await setDoc(playerRef, { balance: amount });
+        // If player doesn't exist yet
+        await playerRef.set({ balance: amount });
       }
 
-      alert("Deposited NPR " + amount + " to player " + playerId);
+      alert("Deposit successful!");
+      document.getElementById("depositAmount").value = "";
+      document.getElementById("playerAccount").value = "";
     }
-
-    // LOGOUT
-    function logout() {
-      document.getElementById("dashboard").style.display = "none";
-      document.getElementById("login").style.display = "block";
-    }
-
-    window.login = login;
-    window.deposit = deposit;
-    window.logout = logout;
   </script>
 </body>
 </html>
